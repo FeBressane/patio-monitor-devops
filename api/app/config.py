@@ -15,11 +15,15 @@ ASSISTENTE_TIMEOUT_S = float(os.getenv("ASSISTENTE_TIMEOUT_S", "20"))
 DEMO = os.getenv("DEMO", "true").lower() == "true"
 DEMO_INTERVALO_S = float(os.getenv("DEMO_INTERVALO_S", "6"))
 
+_raiz_pacote = Path(__file__).resolve().parents[1]
+
 # Export da tabela Ouro (fato_permanencia) baixado do Databricks.
-OURO_CSV = Path(os.getenv("OURO_CSV", str(Path(__file__).resolve().parents[2] / "data" / "ouro" / "fato_permanencia.csv")))
+# No App Service o pacote leva data/ ao lado de app/; no repositório, data/ fica na raiz (dois níveis acima).
+_ouro_rel = Path("data") / "ouro" / "fato_permanencia.csv"
+OURO_CSV = Path(os.getenv("OURO_CSV", str(next(
+    (p for p in (_raiz_pacote / _ouro_rel, _raiz_pacote.parent / _ouro_rel) if p.exists()), _raiz_pacote.parent / _ouro_rel))))
 
 # Pasta do front estático. No App Service o pacote leva front/ ao lado de app/; no Docker o nginx serve o front.
-_raiz_pacote = Path(__file__).resolve().parents[1]
 FRONT_DIR = Path(os.getenv("FRONT_DIR", str(next(
     (p for p in (_raiz_pacote / "front", _raiz_pacote.parent / "front") if p.is_dir()), _raiz_pacote / "front"))))
 
