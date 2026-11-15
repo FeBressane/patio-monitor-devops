@@ -87,3 +87,12 @@ def test_metrics_com_token(cli, monkeypatch):
     monkeypatch.setattr(config, "METRICS_TOKEN", "segredo")
     assert cli.get("/metrics").status_code == 401
     assert cli.get("/metrics", headers={"Authorization": "Bearer segredo"}).status_code == 200
+
+
+def test_onibus_mapa_sem_token_usa_ultima_coleta(cli):
+    r = cli.get("/onibus-mapa").json()
+    assert r["fonte"] in ("ultima_coleta", "indisponivel")
+    assert r["centro"]["raio_m"] == 250
+    for o in r["onibus"]:
+        assert o["distancia_m"] <= r["raio_coleta_m"]
+        assert o["no_patio"] == (o["distancia_m"] <= 250)

@@ -3,41 +3,142 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pátio Monitor</title>
+  <title>Pátio Monitor · Terminal Pirituba</title>
+  <meta name="description" content="Visão única do pátio de ônibus: o previsto (escala) cruzado com o registrado (portaria e GPS).">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230b6e4f'/%3E%3Cpath d='M6 7h12v8H6zM7 17h2M15 17h2M6 11h12' stroke='white' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Front de DEMONSTRAÇÃO: só mostra que a API responde. O front definitivo (pátio 3D) é desenvolvido à parte. -->
-  <header>
-    <h1>Pátio Monitor <small>demonstração da API</small></h1>
-    <span id="conexao" role="status">conectando…</span>
+  <header class="topo">
+    <div class="marca">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6"/><path d="M6 7h12v8H6zM7 17h2M15 17h2M6 11h12"/></svg>
+      <div>
+        <h1>Pátio Monitor</h1>
+        <p>Terminal Pirituba · São Paulo</p>
+      </div>
+    </div>
+    <nav aria-label="Seções">
+      <a href="#operacao">Operação</a>
+      <a href="#mapa-sec">Mapa</a>
+      <a href="#indicadores">Indicadores</a>
+      <a href="#ouro-sec">Camada Ouro</a>
+    </nav>
+    <div class="ao-vivo"><span class="ponto" id="ponto"></span><span id="conexao" role="status">conectando…</span></div>
   </header>
+
   <main>
-    <section>
-      <h2>Pendências</h2>
-      <ul id="alertas"></ul>
+    <section class="intro">
+      <h2>O previsto cruzado com o que aconteceu, enquanto ainda dá tempo de agir.</h2>
+      <p>Escala, portaria e GPS dos ônibus num só lugar. O controlador vê quem está no pátio, há quanto tempo, e quais viagens precisam de atenção.</p>
     </section>
-    <section>
-      <h2>Veículos</h2>
-      <table>
-        <thead><tr><th>Prefixo</th><th>Linha</th><th>Local</th><th>Estado</th><th>No pátio</th><th>Conciliação</th><th></th></tr></thead>
-        <tbody id="veiculos"></tbody>
-      </table>
+
+    <section class="kpis" aria-label="Indicadores principais">
+      <article class="kpi"><span class="kpi-rotulo">Ônibus no pátio agora</span><strong id="k-patio">–</strong><span class="kpi-nota" id="k-patio-nota">operação em tempo real</span></article>
+      <article class="kpi"><span class="kpi-rotulo">Pendências abertas</span><strong id="k-pend">–</strong><span class="kpi-nota" id="k-pend-nota">escala × portaria × GPS</span></article>
+      <article class="kpi"><span class="kpi-rotulo">Ônibus na região</span><strong id="k-mapa">–</strong><span class="kpi-nota" id="k-mapa-nota">raio de 1,5 km · SPTrans</span></article>
+      <article class="kpi"><span class="kpi-rotulo">Partidas no horário</span><strong id="k-hor">–</strong><span class="kpi-nota" id="k-hor-nota">camada Ouro</span></article>
+      <article class="kpi"><span class="kpi-rotulo">Permanência mediana</span><strong id="k-perm">–</strong><span class="kpi-nota">estadias com saída registrada</span></article>
     </section>
-    <section>
-      <h2>Permanência no pátio <small>camada Ouro · fato_permanencia</small></h2>
-      <p id="ouro-info" class="meta">carregando…</p>
-      <table>
-        <thead><tr><th>Viagem</th><th>Linha</th><th>Prefixo</th><th>Entrada</th><th>Saída</th><th>Min. parado</th><th>Conciliação</th></tr></thead>
-        <tbody id="ouro"></tbody>
-      </table>
+
+    <div class="grade grade-mapa" id="mapa-sec">
+      <section class="cartao">
+        <div class="cabeca">
+          <div><h2>Ônibus em volta do terminal</h2><p class="meta" id="mapa-info">carregando posições…</p></div>
+          <span class="selo" id="mapa-fonte">–</span>
+        </div>
+        <div id="mapa" role="img" aria-label="Mapa com os ônibus num raio de 1,5 km do Terminal Pirituba"></div>
+        <ul class="legenda">
+          <li><i class="dot dot-patio"></i>No pátio (até 250 m)</li>
+          <li><i class="dot dot-perto"></i>Chegando ou saindo (até 1,5 km)</li>
+          <li><i class="anel"></i>Raio do pátio</li>
+        </ul>
+      </section>
+
+      <section class="cartao" id="operacao">
+        <div class="cabeca"><h2>Pendências</h2><span class="selo" id="pend-total">–</span></div>
+        <ul class="pendencias" id="alertas"><li class="meta">carregando…</li></ul>
+      </section>
+    </div>
+
+    <div class="grade grade-2">
+      <section class="cartao">
+        <div class="cabeca"><div><h2>Pátio agora</h2><p class="meta">Vagas, plataformas e portão com o ônibus que ocupa cada uma</p></div></div>
+        <svg id="patio" class="patio" role="img" aria-label="Planta do pátio com a ocupação das vagas"></svg>
+        <p class="meta" id="patio-fora"></p>
+      </section>
+
+      <section class="cartao">
+        <div class="cabeca"><h2>Veículos</h2><span class="meta">clique em “Por quê?” para perguntar ao assistente</span></div>
+        <div class="rolagem">
+          <table>
+            <thead><tr><th>Prefixo</th><th>Linha</th><th>Local</th><th>Estado</th><th class="num">No pátio</th><th>Conciliação</th><th></th></tr></thead>
+            <tbody id="veiculos"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <section class="bloco" id="indicadores">
+      <div class="bloco-cabeca">
+        <h2>Indicadores da operação</h2>
+        <p class="meta" id="ouro-resumo">Dados da camada Ouro (<code>fato_permanencia</code>) do pipeline Airflow → Databricks.</p>
+      </div>
+      <div class="grade grade-graficos">
+        <figure class="cartao grafico">
+          <figcaption><h3>Divergências por tipo</h3><p class="meta">viagens que não saíram como previsto</p></figcaption>
+          <div class="tela"><canvas id="g-status"></canvas></div>
+        </figure>
+        <figure class="cartao grafico">
+          <figcaption><h3>Partidas no horário por dia</h3><p class="meta">% de viagens com status ok · indicador de impacto</p></figcaption>
+          <div class="tela"><canvas id="g-dia"></canvas></div>
+        </figure>
+        <figure class="cartao grafico">
+          <figcaption><h3>Permanência mediana por linha</h3><p class="meta">minutos no pátio · 8 linhas com mais estadias</p></figcaption>
+          <div class="tela"><canvas id="g-linha"></canvas></div>
+        </figure>
+        <figure class="cartao grafico">
+          <figcaption><h3>Entradas no pátio por hora</h3><p class="meta">movimento ao longo do dia (horário de Brasília)</p></figcaption>
+          <div class="tela"><canvas id="g-hora"></canvas></div>
+        </figure>
+      </div>
     </section>
-    <section id="resposta" hidden>
-      <h2>Assistente</h2>
-      <div id="texto-resposta"></div>
-      <p class="aviso">Sugestão do assistente. A decisão é do controlador.</p>
+
+    <section class="cartao" id="ouro-sec">
+      <div class="cabeca">
+        <div><h2>Permanência no pátio <small>camada Ouro · fato_permanencia</small></h2><p class="meta" id="ouro-info">carregando…</p></div>
+      </div>
+      <div class="rolagem">
+        <table>
+          <thead><tr><th>Viagem</th><th>Linha</th><th>Prefixo</th><th>Entrada</th><th>Saída</th><th class="num">Min. parado</th><th>Conciliação</th></tr></thead>
+          <tbody id="ouro"></tbody>
+        </table>
+      </div>
     </section>
   </main>
+
+  <aside class="assistente" id="resposta" hidden aria-live="polite">
+    <div class="cabeca"><h2>Assistente</h2><button class="fechar" id="fechar" aria-label="Fechar">×</button></div>
+    <p class="meta" id="pergunta"></p>
+    <div id="texto-resposta"></div>
+    <p class="aviso">Sugestão do assistente. A decisão é do controlador.</p>
+  </aside>
+
+  <footer>
+    <div>
+      <strong>Pátio Monitor</strong> · FIAP Global Solution 2026.2 · CitizenTech · ODS 11.2 e ODS 9
+    </div>
+    <div class="equipe">Camila do Prado Padalino (RM 98316) · Felipe Cavalcante Bressane (RM 97688) · Gabriel Teixeira Machado (RM 551570)</div>
+    <div class="links">
+      <a href="/docs">API (Swagger)</a>
+      <a href="https://github.com/FeBressane/patio-monitor-devops">Repositório do MVP</a>
+      <a href="https://github.com/FeBressane/patio-monitor-bigdata">Pipeline de dados</a>
+    </div>
+    <p class="meta">Posições: SPTrans Olho Vivo. Mapa: © colaboradores do OpenStreetMap. Portaria e escala simuladas a partir das posições reais.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -24,6 +24,12 @@ _ouro_rel = Path("data") / "ouro" / "fato_permanencia.csv"
 _ouro_candidatos = [Path(p) for p in (os.getenv("OURO_CSV"),) if p] + [_raiz_pacote / _ouro_rel, _raiz_pacote.parent / _ouro_rel]
 OURO_CSV = next((p for p in _ouro_candidatos if p.exists()), _ouro_candidatos[0])
 
+# Mapa dos ônibus: com SPTRANS_TOKEN consulta a Olho Vivo ao vivo; sem ele, usa a última coleta do pipeline,
+# que fica em data/mapa/ ao lado de data/ouro/.
+SPTRANS_TOKEN = os.getenv("SPTRANS_TOKEN", "")
+MAPA_CACHE_S = float(os.getenv("MAPA_CACHE_S", "30"))
+MAPA_SNAPSHOT = OURO_CSV.parent.parent / "mapa" / "onibus_ultima_coleta.json"
+
 # Pasta do front estático. No App Service o pacote leva front/ ao lado de app/; no Docker o nginx serve o front.
 FRONT_DIR = Path(os.getenv("FRONT_DIR", str(next(
     (p for p in (_raiz_pacote / "front", _raiz_pacote.parent / "front") if p.is_dir()), _raiz_pacote / "front"))))

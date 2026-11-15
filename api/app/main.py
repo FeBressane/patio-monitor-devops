@@ -8,6 +8,7 @@ Endpoints combinados entre as disciplinas (contrato em docs/contrato-api.md):
   GET  /alertas         pendências (status != ok)
   POST /assistente      pergunta ao assistente de GenAI
   GET  /permanencia     tabela Ouro (fato_permanencia) exportada do Databricks
+  GET  /onibus-mapa     ônibus em volta do pátio (Olho Vivo ao vivo ou a última coleta do pipeline)
   GET  /layout          vagas, plataformas e portão
   GET  /metrics         Prometheus (latência, tráfego, erros, saturação)
 """
@@ -25,7 +26,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from . import assistente, config, demo
+from . import assistente, config, demo, mapa
 from .db import Conciliacao, EventoPosicao, VeiculoEstado, agora, criar_tabelas, get_db
 from .layout import layout as obter_layout
 from .schemas import AssistenteIn, AssistenteOut, ConciliacaoIn, ConciliacaoOut, PosicaoIn, PosicaoOut
@@ -171,6 +172,12 @@ async def perguntar(body: AssistenteIn, db: Session = Depends(get_db)):
         if v:
             contexto = _posicao_out(v, _status_por_prefixo(db)).model_dump(mode="json")
     return await assistente.perguntar(body.pergunta, contexto)
+
+
+@router.get("/onibus-mapa", tags=["big data"])
+async def onibus_mapa():
+    """Ônibus num raio de 1,5 km do pátio: Olho Vivo ao vivo (com SPTRANS_TOKEN) ou a última coleta do pipeline."""
+    return await mapa.onibus_mapa()
 
 
 @router.get("/permanencia", tags=["big data"])

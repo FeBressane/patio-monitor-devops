@@ -86,7 +86,7 @@ jobs:
           cp -r api/app api/requirements.txt pacote/
           cp -r front pacote/front
           rm -f pacote/front/Dockerfile pacote/front/nginx.conf
-          mkdir -p pacote/data && cp -r data/ouro pacote/data/ 2>/dev/null || true
+          mkdir -p pacote/data && cp -r data/ouro data/mapa pacote/data/ 2>/dev/null || true
 
       - name: Login na Azure (service principal com acesso só ao resource group)
         uses: azure/login@v2
@@ -97,7 +97,7 @@ jobs:
         run: |
           az webapp config appsettings set -g "${{ secrets.AZURE_RESOURCE_GROUP }}" -n "${{ secrets.AZURE_WEBAPP_NAME }}" \
             --settings INGEST_API_KEY="${{ secrets.INGEST_API_KEY }}" METRICS_TOKEN="${{ secrets.METRICS_TOKEN }}" \
-                       ASSISTENTE_URL="${{ secrets.ASSISTENTE_URL }}" --output none
+                       ASSISTENTE_URL="${{ secrets.ASSISTENTE_URL }}" SPTRANS_TOKEN="${{ secrets.SPTRANS_TOKEN }}" --output none
 
       - uses: azure/webapps-deploy@v3
         with:
