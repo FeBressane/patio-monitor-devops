@@ -18,10 +18,11 @@ DEMO_INTERVALO_S = float(os.getenv("DEMO_INTERVALO_S", "6"))
 _raiz_pacote = Path(__file__).resolve().parents[1]
 
 # Export da tabela Ouro (fato_permanencia) baixado do Databricks.
-# No App Service o pacote leva data/ ao lado de app/; no repositório, data/ fica na raiz (dois níveis acima).
+# Ordem: a variável OURO_CSV (se o arquivo existir); data/ ao lado de app/ (pacote do App Service, que o Oryx
+# extrai em /tmp/<hash>, e não em wwwroot); data/ na raiz do repositório (dois níveis acima, uso local).
 _ouro_rel = Path("data") / "ouro" / "fato_permanencia.csv"
-OURO_CSV = Path(os.getenv("OURO_CSV", str(next(
-    (p for p in (_raiz_pacote / _ouro_rel, _raiz_pacote.parent / _ouro_rel) if p.exists()), _raiz_pacote.parent / _ouro_rel))))
+_ouro_candidatos = [Path(p) for p in (os.getenv("OURO_CSV"),) if p] + [_raiz_pacote / _ouro_rel, _raiz_pacote.parent / _ouro_rel]
+OURO_CSV = next((p for p in _ouro_candidatos if p.exists()), _ouro_candidatos[0])
 
 # Pasta do front estático. No App Service o pacote leva front/ ao lado de app/; no Docker o nginx serve o front.
 FRONT_DIR = Path(os.getenv("FRONT_DIR", str(next(
