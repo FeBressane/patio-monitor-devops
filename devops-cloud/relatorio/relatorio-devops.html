@@ -29,6 +29,9 @@
   .capa .integrantes { font-size: 11pt; line-height: 1.7; }
   .capa .links { font-size: 10pt; }
   .print { border: 2px dashed var(--suave); background: var(--fundo); color: var(--suave); padding: 22px 12px; text-align: center; margin: 8px 0; font-size: 9.5pt; break-inside: avoid; }
+  figure { margin: 8px 0; break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--linha); }
+  figcaption { font-size: 9pt; color: var(--suave); text-align: center; margin-top: 2px; }
   .legenda { font-size: 9pt; color: var(--suave); text-align: center; margin-top: 2px; }
   .ok { color: var(--ok); font-weight: 600; } .erro { color: var(--erro); font-weight: 600; }
   .caixa { background: var(--fundo); border-left: 4px solid var(--acento); padding: 8px 10px; margin: 8px 0; break-inside: avoid; }
@@ -158,7 +161,7 @@
   <li><b>Política de regiões do Azure for Students:</b> só libera brazilsouth, chilecentral, canadacentral, eastus2 e centralus (<code>RequestDisallowedByAzure</code> em eastus).</li>
   <li><b>Limite de 1 plano F1 Linux por região:</b> o F1 de Brazil South estava ocupado por um projeto antigo, que foi removido para liberar a região.</li>
 </ul>
-<div class="print">[PRINT: <code>terraform plan</code> mostrando "No changes" depois do import, ou o <code>terraform apply</code> concluído]</div>
+<figure><img src="prints/01_terraform_plan.png" alt="terraform plan sem mudanças"><figcaption><code>terraform plan</code> em 15/11/2026: "No changes", a nuvem está igual ao código. O ID da assinatura foi mascarado.</figcaption></figure>
 
 <!-- ===================== 5. PIPELINE ===================== -->
 <h2 class="quebra">5. Pipeline CI/CD DevSecOps (GitHub Actions)</h2>
@@ -184,9 +187,10 @@
   <tr><td><a href="https://github.com/FeBressane/patio-monitor-devops/actions/runs/43524648708">#43524648708</a></td><td class="erro">Barrada</td><td>O Gitleaks encontrou o token, e o build, o scan das imagens e o deploy foram <b>pulados</b>.</td></tr>
   <tr><td><a href="https://github.com/FeBressane/patio-monitor-devops/actions/runs/43524768351">#43524768351</a></td><td class="ok">Corrigida</td><td>O token passou a vir de variável de ambiente (<code>os.getenv</code>), e o commit foi reescrito para o valor não ficar no histórico. Todos os jobs passaram.</td></tr>
 </table>
-<div class="print">[PRINT: execução #43524648708 com o job Gitleaks em vermelho e o log mostrando o achado]</div>
-<div class="print">[PRINT: execução #43524768351 com todos os jobs em verde]</div>
-<div class="print">[PRINT: execução da main com o job "Deploy no Azure App Service" e o health check em verde]</div>
+<figure><img src="prints/02_pipeline_barrado.jpg" alt="Execução barrada"><figcaption>Execução #43524648708: o Gitleaks falha, e o build, o scan das imagens e o deploy ficam pulados.</figcaption></figure>
+<figure><img src="prints/03_gitleaks_log.jpg" alt="Log do Gitleaks"><figcaption>Log do Gitleaks: achado <code>generic-api-key</code> em <code>api/app/sptrans_cliente.py</code>, linha 3 ("leaks found: 1"), com o valor mascarado (REDACTED).</figcaption></figure>
+<figure><img src="prints/04_pipeline_corrigido.jpg" alt="Execução corrigida"><figcaption>Execução #43524768351: depois da correção, todos os jobs passam. O deploy é pulado porque o branch não é a <code>main</code>.</figcaption></figure>
+<figure><img src="prints/05_deploy_main.jpg" alt="Deploy na main"><figcaption>Execução da <code>main</code> (#16): todos os jobs em verde, incluindo "Deploy no Azure App Service", que termina com o health check em <code>/health</code>.</figcaption></figure>
 
 <!-- ===================== 6. OBSERVABILIDADE ===================== -->
 <h2>6. Observabilidade (Prometheus + Grafana)</h2>
@@ -209,8 +213,8 @@
   <li><b>Latência:</b> com cerca de 800 requisições reais em 5 minutos (13/11/2026, 21h), o p95 de <code>/api/posicoes</code> e dos demais endpoints ficou em <b>~95 ms</b>, abaixo da meta de 300 ms do alerta.</li>
   <li><b>Alerta disparado (teste controlado de queda):</b> às 21:24 o App Service foi parado de propósito (<code>az webapp stop</code>). O <code>up</code> do job <code>patio-azure</code> foi a 0, o alerta <code>ApiFora</code> passou de <i>pending</i> para <b><i>firing</i></b>, e às 21:30 o app foi religado (<code>/health</code> voltou com 200). O painel "Alertas do Prometheus" do dashboard mostra o disparo.</li>
 </ul>
-<div class="print">[PRINT: dashboard "Pátio Monitor · 4 sinais de ouro" com dados do MVP publicado]</div>
-<div class="print">[PRINT: painel "Alertas do Prometheus" (ou Prometheus › Graph com a consulta <code>ALERTS</code>, última 1 h) mostrando ApiFora em firing por volta das 21:28 de 13/11]</div>
+<figure><img src="prints/06_grafana_4_sinais.jpg" alt="Dashboard dos 4 sinais de ouro"><figcaption>Dashboard "Pátio Monitor · 4 sinais de ouro" com dados do MVP publicado (últimas 3 h, 15/11): latência p95, tráfego, erros, saturação e o painel "API publicada no ar".</figcaption></figure>
+<figure><img src="prints/07_grafana_alertas_apifora.jpg" alt="Alerta ApiFora disparado"><figcaption>Mesmo dashboard em 13/11, das 21h às 22h: o painel "Alertas do Prometheus" mostra o <code>ApiFora</code> em pending e depois em <b>firing</b> entre 21h26 e 21h31, durante a parada controlada. O painel "API publicada no ar" registra a queda no mesmo intervalo.</figcaption></figure>
 
 <!-- ===================== 7. RESPONSABILIDADE ===================== -->
 <h2 class="quebra">7. Modelo de responsabilidade compartilhada</h2>
