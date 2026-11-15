@@ -34,11 +34,11 @@ def _onibus(prefixo, linha, lat, lon, data_hora) -> dict | None:
         lat, lon = float(lat), float(lon)
     except (TypeError, ValueError):
         return None
-    d = _dist_m(CENTRO["lat"], CENTRO["lon"], lat, lon)
+    d = round(_dist_m(CENTRO["lat"], CENTRO["lon"], lat, lon))  # a mesma distância (em metros inteiros) no texto e na cor
     if d > RAIO_COLETA_M:
         return None
     return {"prefixo": str(prefixo), "linha": linha, "lat": lat, "lon": lon, "data_hora": data_hora,
-            "distancia_m": round(d), "no_patio": d <= CENTRO["raio_m"]}
+            "distancia_m": d, "no_patio": d <= CENTRO["raio_m"]}
 
 
 def _resposta(fonte: str, onibus: list, atualizado: str | None) -> dict:
